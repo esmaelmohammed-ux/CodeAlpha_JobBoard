@@ -1,0 +1,15 @@
+{
+  "name": "codealpha_jobboard",
+  "version": "1.0.0",
+  "description": "CodeAlpha Task 4 - Job Board Platform",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.7.0",
+    "express": "^4.21.2",
+    "multer": "^1.4.5-lts.1"
+  }
+}

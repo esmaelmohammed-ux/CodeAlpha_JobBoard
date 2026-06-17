@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Job Board | CodeAlpha</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #f1f5f9; color: #0f172a; padding: 2rem 1rem; }
+    .container { max-width: 960px; margin: 0 auto; }
+    h1 { margin-bottom: .25rem; }
+    .sub { color: #64748b; margin-bottom: 2rem; }
+    .filters { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1.5rem; }
+    input, select, textarea {
+      padding: .6rem .75rem; border: 1px solid #cbd5e1; border-radius: 6px; font: inherit;
+    }
+    button {
+      padding: .6rem 1rem; background: #7c3aed; color: white; border: none;
+      border-radius: 6px; cursor: pointer; font-weight: 600;
+    }
+    .grid { display: grid; gap: 1rem; }
+    .card {
+      background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 1.25rem;
+    }
+    .card h2 { font-size: 1.1rem; margin-bottom: .35rem; }
+    .meta { color: #64748b; font-size: .9rem; margin-bottom: .5rem; }
+    .badge {
+      display: inline-block; background: #ede9fe; color: #6d28d9;
+      padding: .2rem .6rem; border-radius: 999px; font-size: .8rem; font-weight: 600;
+    }
+    .msg { margin-top: .5rem; font-size: .9rem; }
+    .msg.ok { color: #16a34a; }
+    .msg.err { color: #dc2626; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Job Board</h1>
+    <p class="sub">CodeAlpha Task 4 — search jobs and apply</p>
+
+    <div class="filters">
+      <input type="text" id="search" placeholder="Search title or description">
+      <input type="text" id="location" placeholder="Location">
+      <select id="jobType">
+        <option value="">All types</option>
+        <option value="full-time">Full-time</option>
+        <option value="remote">Remote</option>
+        <option value="internship">Internship</option>
+      </select>
+      <button onclick="loadJobs()">Search</button>
+    </div>
+
+    <div id="jobs" class="grid"></div>
+  </div>
+
+  <script>
+    async function loadJobs() {
+      const params = new URLSearchParams();
+      const q = document.getElementById('search').value;
+      const location = document.getElementById('location').value;
+      const jobType = document.getElementById('jobType').value;
+      if (q) params.set('q', q);
+      if (location) params.set('location', location);
+      if (jobType) params.set('job_type', jobType);
+
+      const res = await fetch('/api/jobs?' + params.toString());
+      const jobs = await res.json();
+      const container = document.getElementById('jobs');
+
+      if (!jobs.length) {
+        container.innerHTML = '<p class="meta">No jobs found.</p>';
+        return;
+      }
+
+      container.innerHTML = jobs.map((j) => `
+        <div class="card">
+          <h2>${j.title}</h2>
+          <p class="meta">${j.company} · ${j.location} · <span class="badge">${j.job_type}</span></p>
+          <p class="meta">${j.description}</p>
+          <form onsubmit="apply(event, ${j.id})">
+            <input type="number" name="candidate_id" placeholder="Candidate ID (use 1 for demo)" required style="width:100%;margin-bottom:.5rem">
+            <textarea name="cover_letter" placeholder="Cover letter (optional)" rows="2" style="width:100%;margin-bottom:.5rem"></textarea>
+            <button type="submit">Apply</button>
+            <p class="msg" id="msg-${j.id}"></p>
+          </form>
+        </div>
+      `).join('');
+    }
+
+    async function apply(ev, jobId) {
+      ev.preventDefault();
+      const form = ev.target;
+      const msg = document.getElementById('msg-' + jobId);
+      msg.className = 'msg';
+      msg.textContent = '';
+
+      try {
+        const res = await fetch('/api/applications/jobs/' + jobId + '/apply', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            candidate_id: Number(form.candidate_id.value),
+            cover_letter: form.cover_letter.value,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        msg.className = 'msg ok';
+        msg.textContent = 'Application submitted! Status: ' + data.status;
+        form.reset();
+      } catch (err) {
+        msg.className = 'msg err';
+        msg.textContent = err.message;
+      }
+    }
+
+    loadJobs();
+  </script>
+</body>
+</html>
