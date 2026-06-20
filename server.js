@@ -10,7 +10,7 @@ const { uploadsDir } = require('./db/database');
 
 const app = express();
 const PORT = process.env.PORT || 3004;
-// comment 
+// comme
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(uploadsDir));
